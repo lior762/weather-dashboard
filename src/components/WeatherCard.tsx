@@ -5,8 +5,6 @@ interface WeatherCardProps {
 }
 
 export function WeatherCard({ weather }: WeatherCardProps) {
-  const iconUrl = `https://openweathermap.org/img/wn/${weather.icon}@4x.png`;
-
   return (
     <div className="w-full max-w-md rounded-2xl bg-white/10 p-6 text-white backdrop-blur-sm">
       <div className="flex items-center justify-between">
@@ -16,7 +14,9 @@ export function WeatherCard({ weather }: WeatherCardProps) {
           </h2>
           <p className="capitalize text-white/70">{weather.description}</p>
         </div>
-        <img src={iconUrl} alt={weather.description} className="-my-4 h-24 w-24" />
+        <span className="-my-4 text-7xl" role="img" aria-label={weather.description}>
+          {weather.icon}
+        </span>
       </div>
 
       <p className="mt-2 text-6xl font-bold">{Math.round(weather.temp)}°C</p>

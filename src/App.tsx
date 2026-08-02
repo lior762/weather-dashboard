@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { WeatherCard } from "./components/WeatherCard";
-import { fetchCurrentWeather } from "./api/weather";
-import type { CurrentWeather } from "./types/weather";
+import { ForecastList } from "./components/ForecastList";
+import { fetchWeather } from "./api/weather";
+import type { WeatherData } from "./types/weather";
 
 function App() {
-  const [weather, setWeather] = useState<CurrentWeather | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,7 +14,7 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchCurrentWeather(city);
+      const data = await fetchWeather(city);
       setWeather(data);
     } catch (err) {
       setWeather(null);
@@ -39,7 +40,12 @@ function App() {
         <p className="text-white/70">Search for a city to see the current weather.</p>
       )}
 
-      {weather && <WeatherCard weather={weather} />}
+      {weather && (
+        <>
+          <WeatherCard weather={weather.current} />
+          <ForecastList forecast={weather.forecast} />
+        </>
+      )}
     </div>
   );
 }

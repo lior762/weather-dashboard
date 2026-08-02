@@ -1,4 +1,4 @@
-import type { CurrentWeather } from "../types/weather";
+import type { WeatherData } from "../types/weather";
 
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
@@ -21,8 +21,10 @@ interface ForecastResponse {
     weather_code: number;
   };
   daily: {
+    time: string[];
     temperature_2m_max: number[];
     temperature_2m_min: number[];
+    weather_code: number[];
   };
 }
 
@@ -57,7 +59,11 @@ const WEATHER_CODES: Record<number, { description: string; icon: string }> = {
   99: { description: "thunderstorm with heavy hail", icon: "⛈️" },
 };
 
-export async function fetchCurrentWeather(city: string): Promise<CurrentWeather> {
+function describeWeatherCode(code: number) {
+  return WEATHER_CODES[code] ?? { description: "unknown", icon: "🌡️" };
+}
+
+export async function fetchWeather(city: string): Promise<WeatherData> {
   const geoUrl = `${GEOCODING_URL}?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
   const geoResponse = await fetch(geoUrl);
 
@@ -75,8 +81,8 @@ export async function fetchCurrentWeather(city: string): Promise<CurrentWeather>
   const forecastUrl =
     `${FORECAST_URL}?latitude=${location.latitude}&longitude=${location.longitude}` +
     "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code" +
-    "&daily=temperature_2m_max,temperature_2m_min" +
-    "&timezone=auto";
+    "&daily=temperature_2m_max,temperature_2m_min,weather_code" +
+    "&forecast_days=6&timezone=auto";
   const forecastResponse = await fetch(forecastUrl);
 
   if (!forecastResponse.ok) {
@@ -84,12 +90,9 @@ export async function fetchCurrentWeather(city: string): Promise<CurrentWeather>
   }
 
   const data: ForecastResponse = await forecastResponse.json();
-  const weatherInfo = WEATHER_CODES[data.current.weather_code] ?? {
-    description: "unknown",
-    icon: "🌡️",
-  };
+  const currentWeatherInfo = describeWeatherCode(data.current.weather_code);
 
-  return {
+  const current = {
     cityName: location.name,
     country: location.country_code,
     temp: data.current.temperature_2m,
@@ -98,7 +101,20 @@ export async function fetchCurrentWeather(city: string): Promise<CurrentWeather>
     tempMax: data.daily.temperature_2m_max[0],
     humidity: data.current.relative_humidity_2m,
     windSpeed: data.current.wind_speed_10m,
-    description: weatherInfo.description,
-    icon: weatherInfo.icon,
+    description: currentWeatherInfo.description,
+    icon: currentWeatherInfo.icon,
   };
+
+  const forecast = data.daily.time.slice(1, 6).map((date, i) => {
+    const dayWeatherInfo = describeWeatherCode(data.daily.weather_code[i + 1]);
+    return {
+      date,
+      tempMin: data.daily.temperature_2m_min[i + 1],
+      tempMax: data.daily.temperature_2m_max[i + 1],
+      description: dayWeatherInfo.description,
+      icon: dayWeatherInfo.icon,
+    };
+  });
+
+  return { current, forecast };
 }

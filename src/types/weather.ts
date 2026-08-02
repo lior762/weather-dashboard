@@ -10,3 +10,16 @@ export interface CurrentWeather {
   description: string;
   icon: string;
 }
+
+export interface DailyForecast {
+  date: string;
+  tempMin: number;
+  tempMax: number;
+  description: string;
+  icon: string;
+}
+
+export interface WeatherData {
+  current: CurrentWeather;
+  forecast: DailyForecast[];
+}
